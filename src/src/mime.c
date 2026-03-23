@@ -496,6 +496,21 @@ int rc = OK;
 uschar * header = NULL;
 struct mime_boundary_context nested_context;
 
+/* Limit MIME nesting depth to prevent stack overflow from crafted messages.
+RFC 2046 does not specify a maximum, but 100 levels is far beyond any
+legitimate use. */
+
+  {
+  int depth = 0;
+  for (struct mime_boundary_context *p = context; p; p = p->parent)
+    if (++depth > 100)
+      {
+      log_write(0, LOG_MAIN,
+	"MIME: nesting depth limit (100) exceeded, skipping");
+      return OK;
+      }
+  }
+
 /* reserve a line buffer to work in.  Assume tainted data. */
 header = store_get(MIME_MAX_HEADER_SIZE+1, GET_TAINTED);
 
