@@ -238,15 +238,21 @@ HDEBUG(D_auth)
 
 /* We now have to compare the digest, which is 16 bytes in binary, with the
 data received, which is expressed in lower case hex. We checked above that
-there were 32 characters of data left. */
+there were 32 characters of data left. Use constant-time comparison to
+prevent timing side-channel. */
 
-for (i = 0; i < 16; i++)
-  {
-  int a = *clear++;
-  int b = *clear++;
-  if (((((a >= 'a')? a - 'a' + 10 : a - '0') << 4) +
-        ((b >= 'a')? b - 'a' + 10 : b - '0')) != digest[i]) return FAIL;
-  }
+{
+  volatile unsigned char result = 0;
+  for (i = 0; i < 16; i++)
+    {
+    int a = *clear++;
+    int b = *clear++;
+    unsigned char hex_val = (((a >= 'a')? a - 'a' + 10 : a - '0') << 4) +
+                             ((b >= 'a')? b - 'a' + 10 : b - '0');
+    result |= hex_val ^ digest[i];
+    }
+  if (result != 0) return FAIL;
+}
 
 /* Expand server_condition as an authorization check */
 return auth_check_serv_cond(ablock);
