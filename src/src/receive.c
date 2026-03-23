@@ -1095,7 +1095,7 @@ for (;;)
   {
   if (chunking_data_left > 0)
     {
-    unsigned len = MAX(chunking_data_left, thismessage_size_limit - message_size + 1);
+    unsigned len = MIN(chunking_data_left, thismessage_size_limit - message_size + 1);
     const uschar * buf = bdat_getbuf(&len);
 
     if (!buf) return END_EOF;
