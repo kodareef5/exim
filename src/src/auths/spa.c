@@ -260,8 +260,14 @@ if (off >= sizeof(SPAAuthResponse) - 24)
   }
 s = (US responseptr) + off;
 
-if (memcmp(ntRespData, s, 24) == 0)
-  return auth_check_serv_cond(ablock);	/* success. we have a winner. */
+/* Use constant-time comparison to prevent timing side-channel */
+{
+  volatile unsigned char result = 0;
+  for (int i = 0; i < 24; i++)
+    result |= ntRespData[i] ^ s[i];
+  if (result == 0)
+    return auth_check_serv_cond(ablock);	/* success. we have a winner. */
+}
 
   /* Expand server_condition as an authorization check (PH) */
 
